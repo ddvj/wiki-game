@@ -68,7 +68,10 @@ let get_first_item_of_all_unordered_lists contents : string list =
   $$ "ul"
   |> to_list
   |> List.map ~f:(fun ul ->
-    ul $ "li" |> texts |> String.concat ~sep:"" |> String.strip)
+    let single_item = ul $ "li" |> texts in
+    match single_item with
+    | [ single_item ] -> String.strip single_item
+    | _ -> raise_s [%message "not one item"])
 ;;
 
 let%expect_test "get_first_item_of_all_unordered_lists" =
@@ -116,6 +119,24 @@ let get_bolded_text contents : string list =
   $$ "b"
   |> to_list
   |> List.map ~f:(fun b -> texts b |> String.concat ~sep:"" |> String.strip)
+;;
+
+let%expect_test "get_bolded_text" =
+  (* This test uses existing files on the filesystem. *)
+  let contents =
+    File_fetcher.fetch_exn
+      (Local (File_path.of_string "../resources/wiki"))
+      ~resource:"Carnivore"
+  in
+  List.iter (get_bolded_text contents) ~f:print_endline;
+  [%expect
+    {|
+    carnivore
+    Predators
+    Scavengers
+    insectivores
+    piscivores
+    |}]
 ;;
 
 (* [make_command ~summary ~f] is a helper function that builds a simple HTML parsing
