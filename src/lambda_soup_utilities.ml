@@ -59,6 +59,8 @@ let%expect_test "get_list_items" =
     |}]
 ;;
 
+let _ = 1 + 1
+
 (* Gets the first item of all unordered lists contained in an HTML page. *)
 let get_first_item_of_all_unordered_lists contents : string list =
   let open Soup in
@@ -66,10 +68,10 @@ let get_first_item_of_all_unordered_lists contents : string list =
   $$ "ul"
   |> to_list
   |> List.map ~f:(fun ul ->
-    texts ul |> String.concat ~sep:"" |> String.strip)
+    ul $ "li" |> texts |> String.concat ~sep:"" |> String.strip)
 ;;
 
-let%expect_test "get_list_items" =
+let%expect_test "get_first_item_of_all_unordered_lists" =
   (* This test uses existing files on the filesystem. *)
   let contents =
     File_fetcher.fetch_exn
@@ -86,8 +88,25 @@ let%expect_test "get_list_items" =
 
 (* Gets the first item of the second unordered list in an HTML page. *)
 let get_first_item_of_second_unordered_list contents : string =
-  ignore (contents : string);
-  failwith "TODO"
+  match get_first_item_of_all_unordered_lists contents with
+  | _ :: nxt :: _ -> nxt
+  | _ -> failwith "no second element"
+;;
+
+let%expect_test "get_first_item_of_second_unordered_list" =
+  (* This test uses existing files on the filesystem. *)
+  let contents =
+    File_fetcher.fetch_exn
+      (Local (File_path.of_string "../resources/wiki"))
+      ~resource:"Carnivore"
+  in
+  List.iter
+    [ get_first_item_of_second_unordered_list contents ]
+    ~f:print_endline;
+  [%expect
+    {|
+    All birds of prey, such as hawks, eagles, falcons and owls
+    |}]
 ;;
 
 (* Gets all bolded text from an HTML page. *)
