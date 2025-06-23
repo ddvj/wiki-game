@@ -111,8 +111,11 @@ let%expect_test "get_first_item_of_second_unordered_list" =
 
 (* Gets all bolded text from an HTML page. *)
 let get_bolded_text contents : string list =
-  ignore (contents : string);
-  failwith "TODO"
+  let open Soup in
+  parse contents
+  $$ "b"
+  |> to_list
+  |> List.map ~f:(fun b -> texts b |> String.concat ~sep:"" |> String.strip)
 ;;
 
 (* [make_command ~summary ~f] is a helper function that builds a simple HTML parsing
