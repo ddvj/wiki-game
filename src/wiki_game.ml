@@ -20,13 +20,17 @@ let namespace_helper link =
 
 let get_linked_articles contents : string list =
   let open Soup in
+  let _asdg = parse contents $$ "a href" in
   let all_links =
     parse contents
-    $$ "a href=\"/wiki/"
+    $$ "a"
     |> to_list
     |> List.map ~f:(fun a ->
-      texts a |> String.concat ~sep:"" |> String.strip)
+      match attribute "href" a with
+      | Some x -> x
+      | _ -> failwith "unexpected none")
   in
+  Core.print_s [%message "foo" (all_links : string list)];
   List.filter all_links ~f:namespace_helper
 ;;
 
