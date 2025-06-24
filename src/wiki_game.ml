@@ -20,7 +20,6 @@ let namespace_helper link =
 
 let get_linked_articles contents : string list =
   let open Soup in
-  let _asdg = parse contents $$ "a href" in
   let all_links =
     parse contents
     $$ "a"
@@ -30,8 +29,10 @@ let get_linked_articles contents : string list =
       | Some x -> x
       | _ -> failwith "unexpected none")
   in
-  Core.print_s [%message "foo" (all_links : string list)];
-  List.filter all_links ~f:namespace_helper
+  let pre_filtered_list = List.filter all_links ~f:namespace_helper in
+  List.remove_consecutive_duplicates
+    (List.filter pre_filtered_list ~f:(String.is_prefix ~prefix:"/wiki/"))
+    ~equal:String.equal
 ;;
 
 let print_links_command =
