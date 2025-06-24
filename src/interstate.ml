@@ -8,12 +8,6 @@ module Network = struct
     end
 
     include Comparable.Make (T)
-
-    let of_string s =
-      match String.split s ~on:',' with
-      | [ x; y ] -> Some (City.of_string x, City.of_string y)
-      | _ -> None
-    ;;
   end
 
   type t = Connection.Set.t [@@deriving sexp_of]
@@ -21,6 +15,9 @@ module Network = struct
   let of_file input_file =
     let connections =
       In_channel.read_lines (File_path.to_string input_file)
+      (* removed periods from txt file because it was messing up dot file syntax *)
+      |> List.map
+           ~f:(String.filter ~f:(fun char -> not (Char.equal char '.')))
       |> List.map ~f:(fun s -> String.split ~on:',' s)
       |> List.map ~f:(fun lst -> List.tl lst |> Option.value_exn)
       |> List.concat_map ~f:(fun cities ->
