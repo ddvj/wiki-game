@@ -18,6 +18,11 @@ module Network = struct
       (* removed periods from txt file because it was messing up dot file syntax *)
       |> List.map
            ~f:(String.filter ~f:(fun char -> not (Char.equal char '.')))
+      (* replaced spaces with dashes for dot file syntax*)
+      |> List.map
+           ~f:
+             (String.map ~f:(fun char ->
+                match char with ' ' -> '-' | a -> a))
       |> List.map ~f:(fun s -> String.split ~on:',' s)
       |> List.map ~f:(fun lst -> List.tl lst |> Option.value_exn)
       |> List.concat_map ~f:(fun cities ->
