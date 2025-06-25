@@ -22,7 +22,7 @@ module Network = struct
       |> List.map
            ~f:
              (String.map ~f:(fun char ->
-                match char with ' ' -> '-' | a -> a))
+                match char with ' ' -> '_' | a -> a))
       |> List.map ~f:(fun s -> String.split ~on:',' s)
       |> List.map ~f:(fun lst -> List.tl lst |> Option.value_exn)
       |> List.concat_map ~f:(fun cities ->

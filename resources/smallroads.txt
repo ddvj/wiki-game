@@ -1,0 +1,3 @@
+I-10,Los Angeles,Phoenix,Tucson,El Paso,San Antonio,Houston,New Orleans,Tallahassee,Jacksonville
+I-15,Sweetgrass,Great Falls,Butte,Idaho Falls,Ogden,Salt Lake City,Provo,Las Vegas
+I-20,Midland,Odessa,Shreveport,Monroe,Jackson,Birmingham,Atlanta,Augusta,Florence
