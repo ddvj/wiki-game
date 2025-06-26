@@ -124,10 +124,19 @@ let rec get_edges ?(depth : int = 3) ~origin ~how_to_fetch ~visited
 ;;
 
 let visualize ?(max_depth = 3) ~origin ~output_file ~how_to_fetch () : unit =
-  (*let graph = G.create () in
-    Dot.output_graph
+  let links =
+    get_edges
+      ?depth:(Some max_depth)
+      ~origin:(Site.of_string origin)
+      ~how_to_fetch
+      ~visited:(SiteSet.create ())
+  in
+  let graph = G.create () in
+  Hash_set.iter links ~f:(fun (site1, site2) ->
+    G.add_edge graph (Site.to_string site1) (Site.to_string site2));
+  Dot.output_graph
     (Out_channel.create (File_path.to_string output_file))
-    graph; *)
+    graph;
   printf !"Done! Wrote dot file to %{File_path}\n%!" output_file
 ;;
 
