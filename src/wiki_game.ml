@@ -95,19 +95,35 @@ module Dot = Graph.Graphviz.Dot (struct
 module LinkSet = Hash_set.Make (Link)
 module SiteSet = Hash_set.Make (Site)
 
-  let rec get_edges ?(depth: int = 3) ~origin ~how_to_fetch ~visited : LinkSet.t = 
-  let final_set = LinkSet.create() in
-    if not (phys_equal depth 0) then 
+let rec get_edges ?(depth : int = 3) ~origin ~how_to_fetch ~visited
+  : LinkSet.t
+  =
+  if not (phys_equal depth 0)
+  then (
     Hash_set.add visited origin;
-    let adjacent_sites = get_linked_articles (File_fetcher.fetch_exn how_to_fetch ~resource:(Site.get_url origin)) |> List.map ~f:(fun s -> "https://en.wikipedia.org" ^ s)
-  |> List.map ~f:(Site.of_string) in
-  (List.iter adjacent_sites ~f:(fun site -> 
-    if not (Hash_set.mem visited site) then Hash_set.add final_set (origin, site) else ())); 
-  List.fold adjacent_sites ~init:final_set ~f:(fun acc site -> Hash_set.union acc (get_edges ?depth:(Some (depth - 1)) ~origin:site ~how_to_fetch:how_to_fetch ~visited:visited));  
-  in final_set
-  ;;
+    let final_set = LinkSet.create () in
+    let adjacent_sites =
+      get_linked_articles
+        (File_fetcher.fetch_exn how_to_fetch ~resource:(Site.get_url origin))
+      |> List.map ~f:(fun s -> "https://en.wikipedia.org" ^ s)
+      |> List.map ~f:Site.of_string
+    in
+    List.iter adjacent_sites ~f:(fun site ->
+      if not (Hash_set.mem visited site)
+      then Hash_set.add final_set (origin, site)
+      else ());
+    List.fold adjacent_sites ~init:final_set ~f:(fun acc site ->
+      Hash_set.union
+        acc
+        (get_edges
+           ?depth:(Some (depth - 1))
+           ~origin:site
+           ~how_to_fetch
+           ~visited)))
+  else LinkSet.create ()
+;;
 
-  let visualize ?(max_depth = 3) ~origin ~output_file ~how_to_fetch () : unit =
+let visualize ?(max_depth = 3) ~origin ~output_file ~how_to_fetch () : unit =
   (*let graph = G.create () in
     Dot.output_graph
     (Out_channel.create (File_path.to_string output_file))
