@@ -51,7 +51,7 @@ let print_links_command =
    [how_to_fetch] argument along with [File_fetcher] to fetch the articles so that the
    implementation can be tested locally on the small dataset in the ../resources/wiki
    directory. *)
-module Site = struct
+(*module Site = struct
   type t =
     { name : string
     ; url : string
@@ -63,7 +63,7 @@ module Site = struct
   let of_string s =
     { name =
         (let open Soup in
-         parse (File_fetcher.fetch_exn Remote ~resource:s)
+         parse (File_fetcher.fetch_exn (Local (File_path.of_string "../resources/")) ~resource:s)
          $ "title"
          |> R.leaf_text)
     ; url = s
@@ -71,11 +71,10 @@ module Site = struct
   ;;
 
   let get_url t = t.url
-  let get_name t = t.name
-end
+end*)
 
 module Link = struct
-  type t = Site.t * Site.t [@@deriving sexp, hash, compare]
+  type t = string * string [@@deriving sexp, hash, compare]
 end
 
 module G = Graph.Imperative.Graph.Concrete (String)
@@ -93,20 +92,26 @@ module Dot = Graph.Graphviz.Dot (struct
   end)
 
 module LinkSet = Hash_set.Make (Link)
-module SiteSet = Hash_set.Make (Site)
+module SiteSet = Hash_set.Make (String)
 
-let rec get_edges ?(depth : int = 3) ~origin ~how_to_fetch ~visited
-  : LinkSet.t
-  =
+let get_title ~how_to_fetch ~url =
+  let open Soup in
+  parse (File_fetcher.fetch_exn how_to_fetch ~resource:url)
+  $ "title"
+  |> R.leaf_text
+  |> String.tr ~target:' ' ~replacement:'_'
+  |> String.filter ~f:(fun char ->
+    not (phys_equal char '(' || phys_equal char ')'))
+;;
+
+let rec get_edges ~depth ~origin ~how_to_fetch ~visited : LinkSet.t =
   if not (phys_equal depth 0)
   then (
     Hash_set.add visited origin;
     let final_set = LinkSet.create () in
     let adjacent_sites =
       get_linked_articles
-        (File_fetcher.fetch_exn how_to_fetch ~resource:(Site.get_url origin))
-      |> List.map ~f:(fun s -> "https://en.wikipedia.org" ^ s)
-      |> List.map ~f:Site.of_string
+        (File_fetcher.fetch_exn how_to_fetch ~resource:origin)
     in
     List.iter adjacent_sites ~f:(fun site ->
       if not (Hash_set.mem visited site)
@@ -115,29 +120,27 @@ let rec get_edges ?(depth : int = 3) ~origin ~how_to_fetch ~visited
     List.fold adjacent_sites ~init:final_set ~f:(fun acc site ->
       Hash_set.union
         acc
-        (get_edges
-           ?depth:(Some (depth - 1))
-           ~origin:site
-           ~how_to_fetch
-           ~visited)))
+        (get_edges ~depth:(depth - 1) ~origin:site ~how_to_fetch ~visited)))
   else LinkSet.create ()
 ;;
 
 let visualize ?(max_depth = 3) ~origin ~output_file ~how_to_fetch () : unit =
   let links =
     get_edges
-      ?depth:(Some max_depth)
-      ~origin:(Site.of_string origin)
+      ~depth:max_depth
+      ~origin
       ~how_to_fetch
       ~visited:(SiteSet.create ())
   in
   let graph = G.create () in
   Hash_set.iter links ~f:(fun (site1, site2) ->
-    G.add_edge graph (Site.to_string site1) (Site.to_string site2));
+    G.add_edge
+      graph
+      (get_title ~how_to_fetch ~url:site1)
+      (get_title ~how_to_fetch ~url:site2));
   Dot.output_graph
     (Out_channel.create (File_path.to_string output_file))
-    graph;
-  printf !"Done! Wrote dot file to %{File_path}\n%!" output_file
+    graph
 ;;
 
 let visualize_command =
