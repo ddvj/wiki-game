@@ -82,7 +82,7 @@ module G = Graph.Imperative.Graph.Concrete (String)
 module Dot = Graph.Graphviz.Dot (struct
     include G
 
-    let edge_attributes _ = [ `Dir `None ]
+    let edge_attributes _ = [ `Dir `Back ]
     let default_edge_attributes _ = []
     let get_subgraph _ = None
     let vertex_attributes v = [ `Shape `Box; `Label v; `Fillcolor 1000 ]
@@ -101,7 +101,7 @@ let get_title ~how_to_fetch ~url =
   |> R.leaf_text
   |> String.tr ~target:' ' ~replacement:'_'
   |> String.filter ~f:(fun char ->
-    not (phys_equal char '(' || phys_equal char ')'))
+    not (phys_equal char '(' || phys_equal char ')' || phys_equal char '-'))
 ;;
 
 let rec get_edges ~depth ~origin ~how_to_fetch ~visited : LinkSet.t =
@@ -114,9 +114,7 @@ let rec get_edges ~depth ~origin ~how_to_fetch ~visited : LinkSet.t =
         (File_fetcher.fetch_exn how_to_fetch ~resource:origin)
     in
     List.iter adjacent_sites ~f:(fun site ->
-      if not (Hash_set.mem visited site)
-      then Hash_set.add final_set (origin, site)
-      else ());
+      Hash_set.add final_set (origin, site));
     List.fold adjacent_sites ~init:final_set ~f:(fun acc site ->
       Hash_set.union
         acc
